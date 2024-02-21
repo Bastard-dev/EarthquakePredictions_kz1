@@ -1,0 +1,63 @@
+stages:
+    collect_data:
+        cmd: python src/collect_data.py
+        params:
+            - collect_data
+        deps:
+            - src/collect_data.py
+        outs:
+            - data/data.json
+    preprocess:
+        cmd: python src/preprocess.py
+        params:
+            - preprocess
+            - target
+        deps:
+            - src/preprocess.py
+            - data/data.json
+            - data/geocoded_areas.csv
+        outs:
+#                 - artifacts/preprocess/enrich_administrative_areas.csv
+            - artifacts/metadata.json
+            - artifacts/data.csv
+    train_test_split:
+        cmd: python src/train_test_split.py
+        params:
+            - train_test_split
+            - seed
+        deps:
+            - src/train_test_split.py
+            - artifacts/data.csv
+        outs:
+            - artifacts/train.csv
+            - artifacts/test.csv           
+    model:
+        cmd: python src/model.py
+        params:
+            - lightgbm
+            - random_forest
+            - model_type
+            - seed
+        deps:
+            - src/model.py
+            - src/evaluation.py
+            - artifacts/train.csv
+            - artifacts/test.csv
+        outs:
+            - models/model.pkl
+            - models/features.pkl
+        metrics:
+            - models/metrics.json:
+                cache: false
+        plots:
+            - models/feature_importance.png
+            - models/score_distribution.png
+            - eval_plots/plots/custom/roc.json:
+                cache: false
+                x: fpr
+                y: tpr
+                title: 'ROC Curve'
+    gui:
+        cmd: python src/gui/script/window/main.py
+        deps:
+            - src/gui/script/window/main.py
